@@ -21,13 +21,18 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 # grab report imports
 from selenium.webdriver.support.ui import Select
+import csv
 
 # USER DEFINED Variables
 def user_defined_variables():
     try:
-        # main page URL
+        # main page and sheet and cvm base URLs
         global main_url
+        global sheet_url
+        global cvm_url
         main_url = 'http://bvmf.bmfbovespa.com.br/cias-listadas/empresas-listadas/BuscaEmpresaListada.aspx?idioma=pt-br'
+        sheet_url = 'https://docs.google.com/spreadsheets/d/'
+        cvm_url = 'http://bvmf.bmfbovespa.com.br/pt-br/mercados/acoes/empresas/ExecutaAcaoConsultaInfoEmp.asp?CodCVM='
 
         # ID of Google Sheet to store list of companies
         global index_sheet
@@ -63,6 +68,10 @@ def user_defined_variables():
 
         global batch_reports
         batch_reports = 20
+
+        # CSV file
+        global datastudio_file
+        datastudio_file = 'datastudio.csv'
 
     except Exception as e:
         restart(e, __name__)
@@ -132,10 +141,13 @@ def getSheetOfCompanies():
         for item in sheet_of_companies:
             item.pop()
             item.pop()
+            item.pop()
 
         not_found = list_difference(sheet_of_companies, list_of_companies)
+        # debugging purposes
         exceptions = [['14826', 'P.ACUCAR-CBD', 'CIA BRASILEIRA DE DISTRIBUICAO', 'NM'],['14826', 'P.ACUCAR-CBD', 'CIA BRASILEIRA DE DISTRIBUICAO', 'N1']]
         not_found = list_difference(not_found, exceptions)
+
         if not_found:
             # batch add list
             sheet = ws_bovespa_lista_bovespa
@@ -155,8 +167,6 @@ def getSheetOfCompanies():
             sheet_range2 = sheetCol(data_col) + str(total_rows)
             sheet_range = sheet_range1 + ':' + sheet_range2
             sheet.resize(total_rows, total_cols)
-            print('resize1', sheet, total_rows, total_cols)
-
             cell_list = sheet.range(sheet_range)
             try:
                 for cell in cell_list:
@@ -165,8 +175,8 @@ def getSheetOfCompanies():
             except:
                 pass
             sheet.update_cells(cell_list)
-            print('ws_bovespa_lista_bovespa 1 xxxfsxxx = ', ws_bovespa_lista_bovespa)
-            quit()
+            sheet.resize(424, 7)
+            print('FAST RESIZE DEBUGGING')
 
         print(len(not_found), 'Companies updated to sheet')
         print('...done')
@@ -251,6 +261,53 @@ def sortListOfCompaniesByReport():
         # remove timestamp col
         for i in list_of_companies:
             try:
+                i.pop()
+                i.pop()
+            except:
+                pass
+        return list_of_companies
+        print('...done')
+    except Exception as e:
+        restart(e, __name__)
+def sortListOfCompaniesByCSV():
+    try:
+        global list_of_companies
+
+        if google != True:
+            googleAPI()
+
+        print('ORDER BY list of companies CSV')
+        list_of_companies = ws_bovespa_lista_bovespa.get_all_values()
+        list_of_companies.remove(list_of_companies[0])
+        # for item in list_of_companies:
+        #     item.pop()
+
+
+
+        # insert provisory timestamp
+        timestamp2 = datetime.now() - timedelta(days=7)
+        timestamp2 = timestamp2.strftime("%d/%m/%Y %H:%M:%S")
+
+        for i in list_of_companies:
+            try:
+                # a = i[6]
+                if not i[6]:
+                    i[6] = timestamp2
+            except:
+                i.append(timestamp2)
+
+        # order by timestamp newer
+        try:
+            list_of_companies = sorted(list_of_companies, key=lambda x: (x[1]))
+            list_of_companies = sorted(list_of_companies,
+                                       key=lambda x: datetime.strptime(x[6], "%d/%m/%Y %H:%M:%S"))
+        except:
+            pass
+        # remove timestamp col
+        for i in list_of_companies:
+            try:
+                i.pop()
+                i.pop()
                 i.pop()
             except:
                 pass
@@ -361,8 +418,6 @@ def getSheetListOfReports(c):
         newsheet_id = ''
         sheet = ws_bovespa_uberlista
         list = sheet.get_all_values()
-        cvm_url = 'http://bvmf.bmfbovespa.com.br/pt-br/mercados/acoes/empresas/ExecutaAcaoConsultaInfoEmp.asp?CodCVM='
-        sheet_url = 'https://docs.google.com/spreadsheets/d/'
         if newsheet_id == '':
             try:
                 search = str(company [0])  # item to search for (CVM code)
@@ -461,7 +516,7 @@ def getSheetListOfReports(c):
                         createBlasterlista(company)
                         winterLog(company, row [2], report_sheet_id)
                         print(r+1, 'Reports updated to sheet',  row [2])
-                        print('https://docs.google.com/spreadsheets/d/'+newsheet_id)
+                        print(sheet_url + newsheet_id)
 
                     # BMFBOVESPA STYLE
                     if 'bmfbovespa.com.br' in row [0]:
@@ -524,107 +579,6 @@ def reportQuadro(row, optA):
         optB = "Demonstração de Valor Adicionado"
         txt = "txt"
         ReportGeneratorRAD(optA, optB, relat, txt, href, row [2])
-    except Exception as e:
-        restart(e, __name__)
-def updateUberblasterlista():
-    try:
-        if google != True:
-            googleAPI()
-
-        ws_bovespa_uberblasterlista = sh_bovespa.worksheet('uberblasterlista')
-        ws_bovespa_uberblasterlista.resize(1, 8)
-        ws_bovespa_uberblasterlista.resize(2, 8)
-        sheet_url = 'https://docs.google.com/spreadsheets/d/'
-
-        newsheet_id = [item.replace(sheet_url, '') for item in ws_bovespa_uberlista.col_values(4) if sheet_url in item]
-
-        if newsheet_id:
-            prepre = '=SORT(UNIQUE({'
-            pospos = '});8;TRUE;7;TRUE;4;TRUE;5;TRUE;1;TRUE)'
-            pre = 'IFERROR(IMPORTRANGE("'
-            pos = '";"blasterlista!A2:H"))'
-            joint = '; '
-
-            formula = pos + joint + pre
-            formula = formula.join(newsheet_id)
-            formula = prepre + pre + formula + pos + pospos
-            ws_bovespa_uberblasterlista.update_acell('A2', formula)
-
-
-        print('... done')
-
-
-
-
-    except Exception as e:
-        restart(e, __name__)
-def vacationLog(c, col):
-    try:
-        if google != True:
-            googleAPI()
-        company = c
-
-
-        cvm_url = 'http://bvmf.bmfbovespa.com.br/pt-br/mercados/acoes/empresas/ExecutaAcaoConsultaInfoEmp.asp?CodCVM='
-        sheet_url = 'https://docs.google.com/spreadsheets/d/'
-
-        print('... log company ', company[1])
-        # update ws_bovespa_log
-        right_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        log_company = [str(company [0]), str(company [5] [0] [:4].replace('Nenh', 'NONE')), sheet_url + newsheet_id, right_now, 'company']
-        ws_bovespa_log.append_row(log_company)
-
-        # update ws_bovespa_lista_bovespa
-        cell = ws_bovespa_lista_bovespa.find(company[0])
-        row = cell.row
-        ws_bovespa_lista_bovespa.update_cell(row, col, datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-
-
-        # update ws_bovespa_uberlista
-        log_uberlista = [company[1], company[0], cvm_url + company[0], sheet_url + newsheet_id, company[4], company[11], company[2], company[6], " ".join(company[5]), company[12], company[13], company[3], company[8], company[9], company[10], company[7]]
-        sheet = sh_bovespa.worksheet('uberlista')
-        col = sheet.col_count
-        row = sheet.row_count+1
-        try:
-            cell = sheet.find(company [0])
-            row = cell.row
-        except:
-            sheet.resize(row, col)
-        start_row = row
-        start_col = 1
-
-        sheet_range1 = sheetCol(start_col) + str(start_row)
-        sheet_range2 = sheetCol(col) + str(start_row)
-        sheet_range = sheet_range1 + ':' + sheet_range2
-
-        cell_list = sheet.range(sheet_range)
-        try:
-            for cell in cell_list:
-                cell.value = log_uberlista[cell.col - 1]
-        except:
-            pass
-        sheet.update_cells(cell_list)
-
-
-
-
-        print('... done')
-    except Exception as e:
-        restart(e, __name__)
-def winterLog(c, report, report_sheet_id):
-    try:
-        if google != True:
-            googleAPI()
-        company = c
-        sheet_id = report_sheet_id
-
-        print('... log company ', company[1])
-        # update log sheet
-        right_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        log_url = 'https://docs.google.com/spreadsheets/d/' + newsheet_id + '/edit#gid=' + str(sheet_id)
-        log_data = [str(company[0]), str(company[5][0][:4].replace('Nenh','NONE')), log_url, right_now, 'report ' + report]
-        ws_bovespa_log.append_row(log_data)
-        print('...log done!', company[1])
     except Exception as e:
         restart(e, __name__)
 
@@ -709,9 +663,7 @@ def getCompanyMainPage(c):
         global company
         company = c
         print('... Company Details')
-        browser.get(
-            'http://bvmf.bmfbovespa.com.br/pt-br/mercados/acoes/empresas/ExecutaAcaoConsultaInfoEmp.asp?CodCVM=' + company[
-                0])
+        browser.get(cvm_url + company[0])
         browser.minimize_window()
 
         wait.until(EC.presence_of_element_located((By.XPATH, '/html/body')))
@@ -840,8 +792,6 @@ def googleGetSheet(index_sheet):
         # Get Existing Company Sheet newsheet_id
         sheet = ws_bovespa_uberlista
         list = sheet.get_all_values()
-        cvm_url = 'http://bvmf.bmfbovespa.com.br/pt-br/mercados/acoes/empresas/ExecutaAcaoConsultaInfoEmp.asp?CodCVM='
-        sheet_url = 'https://docs.google.com/spreadsheets/d/'
         if newsheet_id == '':
             search = str(company[0])  # item to search for (CVM code)
             for r, row in enumerate(list):
@@ -863,7 +813,8 @@ def googleGetSheet(index_sheet):
             # permission = gdrive.permissions().create(fileId=newsheet_id, body=permission_user, fields="id").execute()
             # permission_id = permission.get('id')
             action = 'created'
-        print(action, company[5][0][:4].replace('Nenh','NONE'), company[0], newsheet_id)
+        print(action, company[1], company [0], newsheet_id)
+
         return newsheet_id
     except Exception as e:
         restart(e, __name__)
@@ -1027,6 +978,180 @@ def createBlasterlista(c):
             ws_company_blasterlista.update_acell('A2', formula)
     except Exception as e:
         restart(e, __name__)
+def getBlasterlista(c):
+    try:
+        # if ((i+1) % 10 == 0) :
+        #     print('google API overload... wait 1 minute')
+        #     time.sleep(60)
+        global company
+        company = c
+
+        if google != True:
+            googleAPI()
+
+        newsheet_id = googleGetSheet(index_sheet)
+
+        # blasterlista for company sheet
+        sh_company = gsheet.open_by_key(newsheet_id)
+        sh_company_list = sh_company.worksheets()
+        ws_company_blasterlista = sh_company.worksheet('blasterlista')
+
+        full_report = ws_company_blasterlista.get_all_values()
+        full_report.pop(0)
+
+        # full_report general cleanup
+        # if dfs consolidadas, remove dfs individuais
+        if any('DFs Consolidadas' in sublist for sublist in full_report):
+            full_report = [line for line in full_report if line[3].strip() != 'DFs Individuais']
+        # filter empty results
+        full_report = [line for line in full_report if len(line[2].strip()) > 0]
+        # strip whitespaces
+        full_report = [[item.strip() for item in line] for line in full_report]
+
+        # open CSV to a list
+        with open(datastudio_file, 'r', encoding='utf-8') as csv_file:
+            csv_data = [line for line in csv.reader(csv_file)]
+
+        # specifics
+        # filter by lenght of field conta
+        full_report_short = [line for line in full_report if len(line[0]) < 6] # 6 for 3 levels, 4 for 2 levels, 1 for 1 level
+        # filter by specific codes
+        full_report_20104 = [line for line in full_report if line[0][:7] == '2.01.04' and len(line[0]) > 7] # all records beyond level
+        full_report_20202 = [line for line in full_report if line[0][:7] == '2.02.02' and len(line[0]) > 7] # all records beyond level
+        full_report_101 = [line for line in full_report if line[0][:4] == '1.01' and len(line[0]) == 7] # all records in this level
+        full_report_102 = [line for line in full_report if line[0][:4] == '1.02' and len(line[0]) == 7] # all records in this level
+        full_report_201 = [line for line in full_report if line[0][:4] == '2.01' and len(line[0]) == 7] # all records in this level
+        full_report_202 = [line for line in full_report if line[0][:4] == '2.02' and len(line[0]) == 7] # all records in this level
+        full_report_304 = [line for line in full_report if line[0][:4] == '3.04' and len(line[0]) == 7] # all records in this level
+        full_report_601 = [line for line in full_report if line[0][:4] == '6.01'] # all records beyond level
+        full_report_708 = [line for line in full_report if line[0][:4] == '7.08'] # all records beyond level
+
+        full_report = full_report_short
+        full_report.extend(full_report_20104)
+        full_report.extend(full_report_20202)
+        full_report.extend(full_report_101)
+        full_report.extend(full_report_102)
+        full_report.extend(full_report_201)
+        full_report.extend(full_report_202)
+        full_report.extend(full_report_304)
+        full_report.extend(full_report_601)
+        full_report.extend(full_report_708)
+
+        full_report_dedup = []
+        for line in full_report:
+            if line not in full_report_dedup:
+                full_report_dedup.append(line)
+        full_report = full_report_dedup
+
+        full_report.sort(key=lambda x: (x[7], x[6], x[0]))
+
+        # clean csv_data
+        # clean csv from pre-existing company data:
+        csv_data = [line for line in csv_data if line[7].strip() != company[1].strip()]
+
+        # combine cs data and full_report
+        csv_data.extend(full_report)
+
+        # write new_csv
+        with open(datastudio_file, 'w', newline='', encoding='utf-8') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerows(csv_data)
+
+        print('...csv done')
+
+    except Exception as e:
+        restart(e, __name__)
+def vacationLog(c, col):
+    try:
+        if google != True:
+            googleAPI()
+        company = c
+
+        print('... log company ', company[1])
+        # update ws_bovespa_log
+        right_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        log_company = [str(company [0]), str(company [5] [0] [:4].replace('Nenh', 'NONE')), sheet_url + newsheet_id, right_now, 'company']
+        ws_bovespa_log.append_row(log_company)
+
+        # update ws_bovespa_lista_bovespa
+        cell = ws_bovespa_lista_bovespa.find(company[0])
+        row = cell.row
+        ws_bovespa_lista_bovespa.update_cell(row, col, datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+
+
+        # update ws_bovespa_uberlista
+        log_uberlista = [company[1], company[0], cvm_url + company[0], sheet_url + newsheet_id, company[4], company[11], company[2], company[6], " ".join(company[5]), company[12], company[13], company[3], company[8], company[9], company[10], company[7]]
+        sheet = sh_bovespa.worksheet('uberlista')
+        col = sheet.col_count
+        row = sheet.row_count+1
+        try:
+            cell = sheet.find(company [0])
+            row = cell.row
+        except:
+            sheet.resize(row, col)
+        start_row = row
+        start_col = 1
+
+        sheet_range1 = sheetCol(start_col) + str(start_row)
+        sheet_range2 = sheetCol(col) + str(start_row)
+        sheet_range = sheet_range1 + ':' + sheet_range2
+
+        cell_list = sheet.range(sheet_range)
+        try:
+            for cell in cell_list:
+                cell.value = log_uberlista[cell.col - 1]
+        except:
+            pass
+        sheet.update_cells(cell_list)
+
+
+
+
+        print('... done')
+    except Exception as e:
+        restart(e, __name__)
+def winterLog(c, report, report_sheet_id):
+    try:
+        if google != True:
+            googleAPI()
+        company = c
+        sheet_id = report_sheet_id
+
+        print('... log company ', company[1])
+        # update log sheet
+        right_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        log_url = sheet_url + newsheet_id + '/edit#gid=' + str(sheet_id)
+        log_data = [str(company[0]), str(company[5][0][:4].replace('Nenh','NONE')), log_url, right_now, 'report ' + report]
+        ws_bovespa_log.append_row(log_data)
+        print('...log done')
+    except Exception as e:
+        restart(e, __name__)
+def springLog(c):
+    try:
+        if google != True:
+            googleAPI()
+        company = c
+        list = ws_bovespa_uberlista.get_all_values()
+
+        search = str(company [0])  # item to search for (CVM code)
+        for r, row in enumerate(list):
+            if search == row [2].replace(cvm_url, ''):  # second index/third column in list
+                company = row
+                break
+
+        # update ws_bovespa_log
+        right_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        log_data = [str(company[1]), str(company[8][:4].replace('Nenh','NONE')), sheet_url + newsheet_id, right_now, 'csv']
+        ws_bovespa_log.append_row(log_data)
+
+        # update ws_bovespa_lista_bovespa
+        cell = ws_bovespa_lista_bovespa.find(company[0])
+        row = cell.row
+        ws_bovespa_lista_bovespa.update_cell(row, 7, datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+
+        print('...log done')
+    except Exception as e:
+        restart(e, __name__)
 
 
 # DEBUG Block
@@ -1109,7 +1234,7 @@ def vacationLogDEBUG(c):
         print('LOG Company', company[1])
 
         # update log sheet
-        log_data = [str(company[5][0][:4].replace('Nenh','NONE')), 'https://docs.google.com/spreadsheets/d/' + newsheet_id, timestamp]
+        log_data = [str(company[5][0][:4].replace('Nenh','NONE')), sheet_url + newsheet_id, timestamp]
         ws_bovespa_log.append_row(log_data)
 
         # cell = ws_bovespa_lista_bovespa.find(company[1])
@@ -1172,9 +1297,9 @@ def restart(e, msg):
         print('stop working in', msg, e)
         # summer_project()
         # vacation_project()
-        winter_project()
-        # spring_project()
-        # quit()
+        # winter_project()
+        spring_project()
+        quit()
     except:
         print('Erro terminal desconhecido. A coisa foi grave!')
         browser.quit()
@@ -1264,7 +1389,7 @@ def winter_project():
         restart(e, __name__)
 def spring_project():
     try:
-        print('SPRING 4 PROJECT in action')
+        print('SPRING PROJECT in action')
         # run_in__logical_steps
         a = user_defined_variables()
         b = start()
@@ -1275,19 +1400,23 @@ def spring_project():
         # d = getSheetOfCompaniesDEBUG()
         d = getSheetOfCompanies()
 
-        # e = sortListOfCompaniesByCompanyDEBUG()
-        e = sortListOfCompaniesByReport()
+        # e = sortListOfCompaniesByCSVDEBUG()
+        e = sortListOfCompaniesByCSV()
 
-        f = updateUberblasterlista()
+        for i, company in enumerate(list_of_companies):
+            if i < batch_companies:
+                h = getBlasterlista(company)
+
+                # z = springLogDEBUG(company)
+                z = springLog(company)
 
     except Exception as e:
         restart(e, __name__)
-0
+
 
 # run_in_a_line_geek
 # aa = summer_project()  # list of companies
 # bb = vacation_project()  # company sheet and data
-cc = winter_project()  # reports content
-# dd = spring_project() # datastudio
+# cc = winter_project()  # reports content
+dd = spring_project() # datastudio
 z = end()
-
