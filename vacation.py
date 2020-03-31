@@ -254,8 +254,95 @@ def sortListOfCompaniesByReport():
         # order by timestamp newer
         try:
             list_of_companies = sorted(list_of_companies, key=lambda x: (x[1]))
-            list_of_companies = sorted(list_of_companies,
-                                       key=lambda x: datetime.strptime(x[5], "%d/%m/%Y %H:%M:%S"))
+            list_of_companies = sorted(list_of_companies, key=lambda x: datetime.strptime(x[5], "%d/%m/%Y %H:%M:%S"))
+        except:
+            pass
+        # remove timestamp col
+        for i in list_of_companies:
+            try:
+                i.pop()
+                i.pop()
+            except:
+                pass
+        return list_of_companies
+        print('...done')
+    except Exception as e:
+        restart(e, __name__)
+def sortListOfCompaniesByReportAlphabethical():
+    try:
+        global list_of_companies
+
+        if google != True:
+            googleAPI()
+
+        print('ORDER BY list of companies reports')
+        list_of_companies = ws_bovespa_lista_bovespa.get_all_values()
+        list_of_companies.remove(list_of_companies[0])
+        # for item in list_of_companies:
+        #     item.pop()
+
+
+
+        # insert provisory timestamp
+        timestamp2 = datetime.now() - timedelta(days=7)
+        timestamp2 = timestamp2.strftime("%d/%m/%Y %H:%M:%S")
+
+        for i in list_of_companies:
+            try:
+                a = i[5]
+                if not i[5]:
+                    i[5] = timestamp2
+            except:
+                i.append(timestamp2)
+
+        # order by timestamp newer
+        try:
+            list_of_companies = sorted(list_of_companies, key=lambda x: (x[1]))
+            # list_of_companies = sorted(list_of_companies, key=lambda x: datetime.strptime(x[5], "%d/%m/%Y %H:%M:%S"))
+        except:
+            pass
+        # remove timestamp col
+        for i in list_of_companies:
+            try:
+                i.pop()
+                i.pop()
+            except:
+                pass
+        return list_of_companies
+        print('...done')
+    except Exception as e:
+        restart(e, __name__)
+def sortListOfCompaniesByReportAlphabeticalReversed():
+    try:
+        global list_of_companies
+
+        if google != True:
+            googleAPI()
+
+        print('ORDER BY list of companies reports')
+        list_of_companies = ws_bovespa_lista_bovespa.get_all_values()
+        list_of_companies.remove(list_of_companies[0])
+        # for item in list_of_companies:
+        #     item.pop()
+
+
+
+        # insert provisory timestamp
+        timestamp2 = datetime.now() - timedelta(days=7)
+        timestamp2 = timestamp2.strftime("%d/%m/%Y %H:%M:%S")
+
+        for i in list_of_companies:
+            try:
+                a = i[5]
+                if not i[5]:
+                    i[5] = timestamp2
+            except:
+                i.append(timestamp2)
+
+        # order by timestamp newer
+        try:
+            list_of_companies = sorted(list_of_companies, key=lambda x: (x[1]))
+            list_of_companies = sorted(list_of_companies, key=lambda x: datetime.strptime(x[5], "%d/%m/%Y %H:%M:%S"))
         except:
             pass
         # remove timestamp col
@@ -538,7 +625,7 @@ def reportGrupo(row, optA):
         wait.until(EC.presence_of_element_located((By.XPATH, xpathA)))
         selectA = Select(browser.find_element(By.XPATH, xpathA))
         selectA.select_by_visible_text(optA)
-        # time.sleep(1)
+        time.sleep(1)
         # browser.minimize_window()
 
         reportQuadro(row, optA)
@@ -839,7 +926,7 @@ def ReportGeneratorRAD(optA, optB, relat, txt, href, report):
         # browser.minimize_window()
 
 
-        time.sleep(1)
+        time.sleep(2)
         wait.until(EC.presence_of_element_located((By.XPATH, frame)))
         browser.switch_to.frame(frame_name)
         # browser.minimize_window()
@@ -851,11 +938,18 @@ def ReportGeneratorRAD(optA, optB, relat, txt, href, report):
             pn = '//td[@id="QtdAprfCapiItgz_1"]'
 
         wait.until(EC.presence_of_element_located((By.XPATH, table)))
+        unidade = browser.find_element_by_xpath('//*[@id="TituloTabelaSemBorda"]').text
+        if 'Reais Mil' in unidade:
+            unidade = 1
+        else:
+            unidade = 1000
+
+        wait.until(EC.presence_of_element_located((By.XPATH, table)))
         rows: int = len(browser.find_elements(By.XPATH, '//*[@id="ctl00_cphPopUp_tbDados"]/tbody/tr'))
         cols: int = len(browser.find_elements(By.XPATH, '//*[@id="ctl00_cphPopUp_tbDados"]/tbody/tr[1]/td'))
 
-        row = []
 
+        row = []
         for r in range(1, rows +1):
             col = []
             col1 = browser.find_element_by_xpath('//*[@id="ctl00_cphPopUp_tbDados"]/tbody/tr[' + str(r) + ']/td[1]').text
@@ -863,14 +957,17 @@ def ReportGeneratorRAD(optA, optB, relat, txt, href, report):
             col3 = browser.find_element_by_xpath('//*[@id="ctl00_cphPopUp_tbDados"]/tbody/tr[' + str(r) + ']/td[3]').text
             if '\n a \n' in col3:
                 col3 = col3.split('\n')[2] + ' -- ' + col3
-            col.append(col1)
-            col.append(col2)
-            col.append(col3)
-            col.append(optA)
-            col.append(optB)
-            col.append(relat)
-            col.append(report)
-            col.append(company[1])
+            col.append(col1.strip())
+            col.append(col2.strip())
+            try:
+                col.append(float(int(col3.replace('.','')) / int(unidade)))
+            except:
+                col.append(col3.strip())
+            col.append(optA.strip())
+            col.append(optB.strip())
+            col.append(relat.strip())
+            col.append(report.strip())
+            col.append(company[1].strip())
             row.append(col)
         full_report.append(row)
         print(optA, ' - ', optB, '...done')
@@ -1042,11 +1139,36 @@ def getBlasterlista(c):
             if line not in full_report_dedup:
                 full_report_dedup.append(line)
         full_report = full_report_dedup
+        for line in full_report:
+            try:
+                line[2] = float(line[2].replace('.',''))
+            except:
+                pass
+
+        # process Fundamentalist Values
+        getFundmentaList(full_report)
 
         full_report.sort(key=lambda x: (x[7], x[6], x[0]))
 
-        # clean csv_data
-        # clean csv from pre-existing company data:
+        # full report append company extra-data
+        cell = ws_bovespa_uberlista.find(c[0])
+        company_extra_data = ws_bovespa_uberlista.row_values(cell.row)
+
+        for line in full_report:
+            line.append(company_extra_data [12])
+            line.append(company_extra_data [13])
+            line.append(company_extra_data [14])
+            line.append(company_extra_data [15])
+            if company_extra_data [11]:
+                line.append(company_extra_data [11])
+            else:
+                line.append('-')
+            line.append(company_extra_data [5])
+            line.append(company_extra_data [3])
+            line.append(company_extra_data [1])
+            line.append(company_extra_data [8])
+            line.append(company_extra_data [7])
+
         csv_data = [line for line in csv_data if line[7].strip() != company[1].strip()]
 
         # combine cs data and full_report
@@ -1059,6 +1181,96 @@ def getBlasterlista(c):
 
         print('...csv done')
 
+    except Exception as e:
+        restart(e, __name__)
+def getFundmentaList(full_report):
+    try:
+        # get fundamentalist values one-by-one
+        fund = []
+        dre = 'Fundamentos'
+        for line in full_report:
+            quadro = 'Balanço Patrimonial Ativo'
+            if line [0] == '1':
+                ativo_total = line [2]
+                fund.append(['91.0', 'Ativos Totais', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1') and 'ativo circulante' in line [1].lower():
+                fund.append(['91.1', 'Ativos Circulantes', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1.01') and re.search(r'.?(equivalentes).?(caixa).?', line [1].lower()):
+                fund.append(['91.1.1', 'Equivalentes de Caixa', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1.01') and re.search(r'.?(contas).?(receber).?', line [1].lower()):
+                fund.append(['91.1.2', 'Contas a Receber', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1.01') and 'estoques' in line [1].lower():
+                fund.append(['91.1.3', 'Estoques', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1.01.02') and re.search(r'([Aa]plica[çc][õo]es|[Aa]plica[çc][ãa]o).*([Ff]inanceiras?)', line [1].lower()) and not re.search(r'[Aa]valiad[oa]s?', line [1].lower()):
+                fund.append(['91.1.4', 'Aplicações Financeiras', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1.02') and re.search(r'.?(ativo).?(não).?(circulante).?', line [1].lower()):
+                fund.append(['91.2', 'Ativos Não Circulantes', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1.02') and re.search(r'([Aa]tivos?).*[Rr]ealiz[aá]v(el)|[Rr]ealiz[aá]v(eis)', line [1].lower()):
+                fund.append(['91.2.1', 'Ativos Realizáveis', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1.02') and re.search(r'([Ii]nvestimentos?)|([Ff]inanceiros?)|([Vv]alor(es)?)', line [1].lower()):
+                fund.append(['91.2.2', 'Investimentos', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1.02') and re.search(r'([Aa]mortiz.*)|([Ii]mobiliz.*)', line [1].lower()):
+                fund.append(['91.2.3', 'Amortizado', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('1.02') and re.search(r'[Ii]ntang[íi]vel', line [1].lower()):
+                fund.append(['91.2.4', 'Intangível', line [2], line [3], quadro, dre , line [6], line [7]])
+
+            quadro = 'Balanço Patrimonial Passivo'
+            if line [0] == '2':
+                fund.append(['92.1', 'Passivos Totais', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('2') and re.search(r'^([Pp]assivos* [Cc]irculantes*)$', line [1].lower()):
+                fund.append(['92.2.1', 'Passivos Circulantes', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('2') and re.search(r'^([Pp]assivos* [Nn][ãa]o [Cc]irculantes*)$', line [1].lower()):
+                fund.append(['92.2.2', 'Passivos Não Circulantes', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('2') and re.search(r'^([Pp]atrim[oô]nio).*([Ll][íi]quido).*$', line [1].lower()):
+                fund.append(['92.3', 'Patrimônio Líquido', line [2], line [3], quadro, dre , line [6], line [7]])
+
+            quadro = 'Demonstração do Resultado'
+            if line [0] == '3.01':
+                fund.append(['93.01', 'Faturamento', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0] == '3.02':
+                fund.append(['93.02', 'Custos da Operação (Variáveis)', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0] == '3.03':
+                fund.append(['93.03', 'Bruto', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0] == '3.04':
+                fund.append(['93.04', 'Despesas da Operação (Fixas)', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0] == '3.04.01':
+                fund.append(['93.04.1', 'Despesas de Vendas', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0] == '3.04.02':
+                fund.append(['93.04.2', 'Despesas de Administração', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0] == '3.05':
+                fund.append(['93.05', 'Resultado da Operação', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('3') and re.search(r'^([Rr]esultado).*([Ff]inanceiro)$', line [1].lower()):
+                fund.append(['93.0', 'Resultado Financeiro', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('3') and re.search(r'^([Rr]esultado [Aa]ntes dos [Tt]ributos sobre o [Ll]ucro)$', line [1].lower()):
+                fund.append(['93.07', 'EBIT', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('3') and re.search(r'[Cc]ontribui[çc][ãa]o [Ss]ocial', line [1].lower()):
+                fund.append(['93.08', 'Impostos', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('3') and re.search(r'^([Rr]esultado [Ll]íquido).*( [Cc]ontinuad[oa]s*)$', line [1].lower()):
+                fund.append(['93.09', 'Líquido', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('3') and re.search(r'^([Ll]ucro/[Pp]rejuízo).*([Pp]er[íi]odo).*$', line [1].lower()):
+                fund.append(['93.10', 'Lucro Contábil Consolidado', line [2], line [3], quadro, dre , line [6], line [7]])
+
+            quadro = 'Demonstração do Fluxo de Caixa'
+            if line [0] == '6.01':
+                fund.append(['96.1', 'Caixa das Operações', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('6.01') and re.search(r'([Ll]ucro)', line [1].lower()):
+                fund.append(['96.1.1', 'Lucro do Exercício', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('6.01.01') and re.search(r'([Dd]eprecia[çc][aã]o)', line [1].lower()):
+                fund.append(['96.1.1.1', 'DA Depreciação e Amortização', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('6.01.02') and re.search(r'([Aa]tivos).*([Pp]assivos*).*', line [1].lower()):
+                fund.append(['96.1.2', 'Variações de Ativos e Passivos', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('6.01.02') and re.search(r'([Cc]ontas).*([Rr]eceber*)', line [1].lower()):
+                fund.append(['96.1.2.1', 'Contas a Receber (Caixa)', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('6.01.02') and re.search(r'([Ee]stoques)', line [1].lower()):
+                fund.append(['96.1.2.2', 'Estoques (Caixa)', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('6.02'):
+                fund.append(['96.2', 'Caixa dos Investimentos', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('6.03'):
+                fund.append(['96.3', 'Caixa dos Financiamentos', line [2], line [3], quadro, dre , line [6], line [7]])
+            if line [0].startswith('6.04'):
+                fund.append(['96.4', 'Caixa Cambial', line [2], line [3], quadro, dre , line [6], line [7]])
+        full_report.extend(fund)
+        return full_report
     except Exception as e:
         restart(e, __name__)
 def vacationLog(c, col):
@@ -1379,7 +1591,7 @@ def winter_project():
 
                 # g = updateCompanyToSheetDEBUG(company)
                 # g = updateCompanyToSheet(company)
-
+                ...
                 h = getSheetListOfReports(company)
 
                 # z = vacationLogDEBUG(company)
