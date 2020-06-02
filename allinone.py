@@ -82,7 +82,7 @@ def user_defined_variables():
         batch_companies = 500
 
         global batch_reports
-        batch_reports = 20
+        batch_reports = 120
 
         # reports from b3
         global parts
@@ -1147,7 +1147,7 @@ def logCompany(company, log):
             except:
                 pass
         bovespa_listagem.update_cells(cell_list)
-        print ('debug LOG not upddated')
+        # print ('debug LOG not upddated')
 
         bovespa_log.append_row([company [col ['CMV']], company [col ['LOG']], company [col ['TIMESTAMP']]])
         return company
