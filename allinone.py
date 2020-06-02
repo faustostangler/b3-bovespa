@@ -101,6 +101,10 @@ def user_defined_variables():
                  ['DRE', 'DFs Consolidadas', 'Demonstração do Fluxo de Caixa'],
                  ['DRE', 'DFs Consolidadas', 'Demonstração de Valor Adicionado']]
         url = ''
+
+        global DRE
+        DRE = ''
+
     except Exception as e:
         restart(e, __name__)
 def startEngine():
@@ -962,44 +966,6 @@ def reportLinkParser(company, links):
         return list_of_reports
     except Exception as e:
         restart(e, __name__)
-def reportContent(company, reports):
-    try:
-        global DRE
-        DRE = ''
-
-        global google
-        if google != True:
-            google = googleAPI()
-
-        full_report = []
-        report = ''
-        for r, row in enumerate(reports):
-            print('...report for', row [1], row [2], row [3], row [4])
-            # company
-            # url = row[0]
-            # relat = row[2]
-            # optA = row[3]
-            # optB = row[4]
-            if r < batch_reports:
-                # RAD GRABBER
-                if 'rad.cvm.gov.br' in row [0]:
-                    # RAD-DRE GRABBER
-                    if 'Dados' in row [2]:
-                        # report = reportContentRAD_Dados(company, row)
-                        pass
-                    elif 'DRE' in row [2]:
-                        if DRE != row[3]:
-                            report = reportContentRAD_DRE(company, row)
-            if report:
-                updateReportToSheet(company, report)
-                full_report.extend(report)
-                print('...saved')
-            else:
-                print('...not found')
-
-
-    except Exception as e:
-        restart(e, __name__)
 def reportContentRAD_Dados(company, row):
     # this is where the magic gets downloaded
     # company
@@ -1122,9 +1088,9 @@ def updateReportToSheet(company, report):
         cell_list = sheet.range(sheet_range)
         for cell in cell_list:
             cell.value = data[cell.row-1][cell.col-1]
-        sheet.resize(len(sheet_data), len(sheet_data[0]+1))
+        sheet.resize(len(sheet_data), len(sheet_data[0])+1)
         sheet.update_cells(cell_list)
-        pass
+        logCompany(company, '3 data')
     except Exception as e:
         restart(e, __name__)
 def dedupReport(report):
@@ -1353,6 +1319,41 @@ def companyReportListData(company, company_reports_list):
         return (missing_reports, existing_reports)
     except Exception as e:
         restart(e, __name__)
+def reportContent(company, r, row):
+    try:
+        global google
+        if google != True:
+            google = googleAPI()
+
+        full_report = []
+        report = ''
+
+        print('...report for', row [1], row [2], row [3], row [4])
+        # company
+        # url = row[0]
+        # relat = row[2]
+        # optA = row[3]
+        # optB = row[4]
+
+        # RAD GRABBER
+        if 'rad.cvm.gov.br' in row [0]:
+            # RAD-DRE GRABBER
+            if 'Dados' in row [2]:
+                # report = reportContentRAD_Dados(company, row)
+                pass
+            elif 'DRE' in row [2]:
+                if DRE != row[3]:
+                    report = reportContentRAD_DRE(company, row)
+        if report:
+            updateReportToSheet(company, report)
+            full_report.extend(report)
+            print('...saved')
+        else:
+            print('...not found')
+
+
+    except Exception as e:
+        restart(e, __name__)
 
 
 
@@ -1409,7 +1410,8 @@ def allinone_project():
                 company_reports_list = companyReportList(company)
                 reports = companyReportListData(company, company_reports_list)
                 for r, row in enumerate(reports[0]):
-                    missing_reports = reportContent(company, reports[0])
+                    if r < batch_reports:
+                        missing_reports = reportContent(company, r, row)
 
         # z = end()
     except Exception as e:
@@ -1424,27 +1426,3 @@ def allinone_project():
 ee = allinone_project()  # all in one
 
 z = end()
-
-# conecta ao google, carrega spreadsheets
-# abre a planilha_lista
-# carrega site_lista
-
-# compara()
-# se site não está na planilha, coloca.
-# se está na planilha, abre planilha_empresa
-
-# se não tem planilha_empresa
-#  abre planilha_empresa
-
-# se não tem lista de reports, pega no site
-
-# abre planilha_empresa_reports
-# pega todos os dados
-
-# filtra por ano, se não tem começa
-# se tem, filtra por optA
-# se não tem pega e bota
-# se tem, filtra por optB
-# se não tem pega e bota
-
-# apaga todos os dados, atualiza todos os dados
