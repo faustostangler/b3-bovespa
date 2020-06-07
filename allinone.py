@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 # pip install --upgrade virtualenv google-api-python-client google-auth-httplib2 google-auth-oauthlib gspread oauth2client
+# https://github.com/faustostangler/b3-bovespa/edit/master/allinone.py
 
 # selenium
 from selenium import webdriver
