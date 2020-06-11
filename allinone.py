@@ -975,8 +975,69 @@ def reportContentRAD_Dados(company, row):
     # optA = row[3]
     # optB = row[4]
     global url
+    global google
+    if google != True:
+        google = googleAPI()
     try:
-        return
+
+        if url != row[0]:
+            browser.get(row[0])
+        if 'Dados' in row[2]:
+            xpathA = '//*[@id="cmbGrupo"]'
+            xpathB = '//*[@id="cmbQuadro"]'
+            frame_name = 'iFrameFormulariosFilho'
+            frame = '//*[@id="iFrameFormulariosFilho"]'
+            table = '//*[@id="UltimaTabela"]'
+
+        browser.switch_to.default_content()
+        # find correct options A
+        browser.find_element(By.XPATH, xpathA)
+        wait.until(EC.presence_of_element_located((By.XPATH, xpathA)))
+        selectA = Select(browser.find_element(By.XPATH, xpathA))
+        selectA.select_by_visible_text(row [3])
+        time.sleep(2)
+
+        # find correct options B
+        browser.find_element(By.XPATH, xpathB)
+        wait.until(EC.presence_of_element_located((By.XPATH, xpathB)))
+        selectB = Select(browser.find_element(By.XPATH, xpathB))
+        selectB.select_by_visible_text(row [4])
+        time.sleep(2)
+
+        # focus and prepare for content
+        wait.until(EC.presence_of_element_located((By.XPATH, frame)))
+        browser.switch_to.frame(frame_name)
+        time.sleep(2)
+
+        wait.until(EC.presence_of_element_located((By.XPATH, table)))
+        time.sleep(2)
+
+        report = []
+        col = []
+        col.append(company[1].strip())
+        col.append(row[1].strip())
+        col.append(row[2].strip())
+        col.append(row[3].strip())
+        col.append(row[4].strip())
+        col.append('Ação')
+        col.append('ON')
+        col3 = browser.find_element_by_xpath('//*[@id="QtdAordCapiItgz_1"]').text
+        col.append(col3.strip())
+        report.append(col)
+
+        col = []
+        col.append(company[1].strip())
+        col.append(row[1].strip())
+        col.append(row[2].strip())
+        col.append(row[3].strip())
+        col.append(row[4].strip())
+        col.append('Ação')
+        col.append('PN')
+        col3 = browser.find_element_by_xpath('//*[@id="QtdAprfCapiItgz_1"]').text
+        col.append(col3.strip())
+        report.append(col)
+
+        return report
     except Exception as e:
         restart(e, __name__)
 def reportContentRAD_DRE(company, row):
@@ -1340,8 +1401,7 @@ def reportContent(company, r, row):
         if 'rad.cvm.gov.br' in row [0]:
             # RAD-DRE GRABBER
             if 'Dados' in row [2]:
-                # report = reportContentRAD_Dados(company, row)
-                pass
+                report = reportContentRAD_Dados(company, row)
             elif 'DRE' in row [2]:
                 if DRE != row[3]:
                     report = reportContentRAD_DRE(company, row)
