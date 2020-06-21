@@ -752,7 +752,7 @@ def getCompanyItem(base_xpath, xpath):
         pass
 def createSheetReports(company):
     try:
-        name = {'name': 'R - ' + str(
+        name = {'name': 'S - ' + str(
             company [col ['SETOR']] [:5] + ' / ' + company [col ['SUBSETOR']] [:5] + ' / ' + company [
                                                                                                  col ['SEGMENTO']] [
                                                                                              :5] + ' - ' + company [
@@ -780,7 +780,7 @@ def createSheetReports(company):
         restart(e, __name__)
 def createSheetFundamentos(company):
     try:
-        name = {'name': 'A - ' + str(
+        name = {'name': 'F - ' + str(
             company [col ['SETOR']] [:5] + ' / ' + company [col ['SUBSETOR']] [:5] + ' / ' + company [
                                                                                                  col ['SEGMENTO']] [
                                                                                              :5] + ' - ' + company [
