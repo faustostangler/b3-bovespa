@@ -1389,7 +1389,7 @@ def companySheet(company):
         company = setb3Company(company)
         logCompany(company, '1 company')
 
-        print('...done', action, company [col ['PREGÃO']], sheet_url + company [col ['REPORTS'], company [col ['FUNDAMENTOS'])
+        print('...done', action, company [col ['PREGÃO']], sheet_url + company [col ['PREGÃO']], company [col ['FUNDAMENTOS']])
         return company
     except Exception as e:
         restart(e, __name__)
