@@ -714,7 +714,7 @@ def b3Company():
         restart(e, __name__)
 def getCompanyMainPage(company):
     try:
-        print('...get details', company [col ['PREGÃO']])
+        # print('...get details', company [col ['PREGÃO']])
         browser.get(cvm_url + company [col ['CMV']])
         # browser.minimize_window()
 
@@ -798,11 +798,11 @@ def createSheetFundamentos(company):
             'role': 'writer',
             'emailAddress': CLIENT_EMAIL
         }
-        print('PLEASE REMEMBER TO REACTIVATE PERMISSIONS IN 24h')
+        # print('PLEASE REMEMBER TO REACTIVATE PERMISSIONS IN 24h')
         # permission = gdrive.permissions().create(fileId=company_id_reports, body=permission_user, fields="id").execute()
         # permission_id = permission.get('id')
 
-        print('...create sheet', company [col ['PREGÃO']], company_id_fundamentos)
+        # print('...create sheet', company [col ['PREGÃO']], company_id_fundamentos)
         return company
     except Exception as e:
         restart(e, __name__)
@@ -1378,8 +1378,8 @@ def companySheet(company):
         company = setb3Company(company)
         logCompany(company, '1 company')
 
-        print('...' + action1, company [col ['REPORTS']])
-        print('...' + action2, company [col ['FUNDAMENTOS']])
+        print('...' + action1, company [col ['PREGÃO']], company [col ['REPORTS']])
+        print('...' + action2, company [col ['PREGÃO']], company [col ['FUNDAMENTOS']])
         print('...done', company [col ['PREGÃO']])
         return company
     except Exception as e:
