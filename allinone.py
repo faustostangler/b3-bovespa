@@ -770,11 +770,11 @@ def createSheetReports(company):
             'role': 'writer',
             'emailAddress': CLIENT_EMAIL
         }
-        print('PLEASE REMEMBER TO REACTIVATE PERMISSIONS IN 24h')
+        # print('PLEASE REMEMBER TO REACTIVATE PERMISSIONS IN 24h')
         # permission = gdrive.permissions().create(fileId=company_id_reports, body=permission_user, fields="id").execute()
         # permission_id = permission.get('id')
 
-        print('...create sheet', company [col ['PREGÃO']], company_id_reports)
+        # print('...create sheet', company [col ['PREGÃO']], company_id_reports)
         return company
     except Exception as e:
         restart(e, __name__)
@@ -829,7 +829,7 @@ def setCompanyMainPage(company):
         report_sheet_index.update_acell('B4', company [col ['SUBSETOR']])
         report_sheet_index.update_acell('C4', company [col ['SEGMENTO']])
         report_sheet_index.update_acell('A2', company [col ['ATIVIDADE']])
-        print('...set details', company [col ['PREGÃO']])
+        # print('...set details', company [col ['PREGÃO']])
         return company
     except Exception as e:
         restart(e, __name__)
@@ -850,7 +850,7 @@ def setCompanyFundamentos(company):
         fundamentos_sheet_index.update_acell('A1', '=IMPORTRANGE("' + company [col ['REPORTS']] + '";"' + range1 + '")')
         fundamentos_sheet_reports.update_acell('A2', '=IMPORTRANGE("' + company [col ['REPORTS']] + '";"' + range2 + '")')
 
-        print('...set details', company [col ['PREGÃO']])
+        # print('...set details', company [col ['PREGÃO']])
         return company
     except Exception as e:
         restart(e, __name__)
@@ -860,7 +860,7 @@ def setb3Company(company):
         if google != True:
             google = googleAPI()
 
-        print('...update listagem', company [col ['PREGÃO']])
+        # print('...update listagem', company [col ['PREGÃO']])
         return company
     except Exception as e:
         restart(e, __name__)
@@ -1355,7 +1355,6 @@ def companySheet(company):
         if google != True:
             google = googleAPI()
         print('GET COMPANY DATA for', company [col ['PREGÃO']])
-        action = ''
 
         global company_id_reports
         if company [col ['REPORTS']]:
@@ -1375,21 +1374,13 @@ def companySheet(company):
             company = setCompanyFundamentos(company)
             action2 = 'created'
 
-        if action1 == 'created':
-            if action2 == 'created':
-                action ='created'
-            else:
-                action ='created and found'
-        else:
-            if action2 == 'created':
-                action == 'found and created'
-            else:
-                action = 'found'
 
         company = setb3Company(company)
         logCompany(company, '1 company')
 
-        print('...done', action, company [col ['PREGÃO']], sheet_url + company [col ['REPORTS']], company [col ['FUNDAMENTOS']])
+        print('...' + action1, company [col ['REPORTS']])
+        print('...' + action2, company [col ['FUNDAMENTOS']])
+        print('...done', company [col ['PREGÃO']])
         return company
     except Exception as e:
         restart(e, __name__)
@@ -1571,4 +1562,3 @@ def allinone_project():
 ee = allinone_project()  # all in one
 
 z = end()
- 
