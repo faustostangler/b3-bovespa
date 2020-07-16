@@ -86,7 +86,7 @@ def user_defined_variables():
         batch_companies = 500
 
         global batch_reports
-        batch_reports = 1
+        batch_reports = 120
 
         # reports from b3
         global parts
@@ -1483,9 +1483,9 @@ def reportContent(company, r, row):
         if report:
             updateReportToSheet(company, report)
             full_report.extend(report)
-            print('...saved')
+            print(r+1, '...saved')
         else:
-            print('...not found')
+            print(r+1, '...not found')
 
 
     except Exception as e:
@@ -1562,3 +1562,4 @@ def allinone_project():
 ee = allinone_project()  # all in one
 
 z = end()
+
